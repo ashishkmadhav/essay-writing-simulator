@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Essay Practice Simulator</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 850px;
+    margin: 30px auto;
+    padding: 16px;
+    background: #f4f6f9;
+    color: #202938;
+  }
+  .panel {
+    background: white;
+    padding: 22px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 27px; }
+  textarea {
+    width: 100%;
+    min-height: 300px;
+    box-sizing: border-box;
+    padding: 12px;
+    font: 16px/1.6 Arial, sans-serif;
+    border: 1px solid #ccd2dc;
+    border-radius: 8px;
+  }
+  button {
+    padding: 10px 14px;
+    margin: 4px 3px 4px 0;
+    border: 0;
+    border-radius: 7px;
+    background: #234e85;
+    color: white;
+    cursor: pointer;
+  }
+  .stats {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .muted { color: #5c6677; }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <h1>Essay Practice Simulator</h1>
+  <p class="muted">SEBI / PFRDA descriptive English practice</p>
+
+  <h3>Today's topic</h3>
+  <p id="topic">Click below to generate a topic.</p>
+  <button onclick="newTopic()">New topic</button>
+  <button onclick="startTimer()">Start timer</button>
+  <button onclick="pauseTimer()">Pause timer</button>
+
+  <div class="stats">
+    <div><strong>Time left</strong><br><span id="timer">30:00</span></div>
+    <div><strong>Word count</strong><br><span id="count">0</span></div>
+    <div><strong>Target</strong><br>250 words</div>
+  </div>
+  <p id="status" class="muted">Ready to practise.</p>
+</div>
+
+<div class="panel">
+  <h3>Write your essay</h3>
+  <textarea id="essay"
+    placeholder="Write your introduction, main arguments, examples and conclusion here..."></textarea>
+  <p id="progress" class="muted">0 / 250 words</p>
+  <button onclick="saveEssay()">Save essay</button>
+  <button onclick="loadEssay()">Load saved essay</button>
+  <button onclick="downloadEssay()">Download essay</button>
+  <button onclick="clearEssay()">Clear essay</button>
+  <p id="message" class="muted"></p>
+</div>
+
+<div class="panel">
+  <h3>Self-evaluation checklist</h3>
+  <label><input type="checkbox"> Clear introduction</label><br>
+  <label><input type="checkbox"> Logical paragraphs and arguments</label><br>
+  <label><input type="checkbox"> Relevant examples or data</label><br>
+  <label><input type="checkbox"> Practical solutions or recommendations</label><br>
+  <label><input type="checkbox"> Strong conclusion</label><br>
+  <label><input type="checkbox"> Grammar, spelling and word limit checked</label>
+</div>
+
+<script>
+const topics = [
+  "The role of financial literacy in economic development",
+  "Artificial intelligence: opportunities and challenges",
+  "Financial inclusion and inclusive growth in India",
+  "The role of SEBI in protecting investors",
+  "Pension reforms and social security in India",
+  "Digital payments and the future of the Indian economy",
+  "Cybersecurity challenges in digital banking",
+  "Climate change and sustainable finance",
+  "The importance of good corporate governance",
+  "Women empowerment and economic growth"
+];
+
+function newTopic() {
+  const topic = topics[Math.floor(Math.random() * topics.length)];
+  document.getElementById("topic").textContent = topic;
+}
+
+const essay = document.getElementById("essay");
+
+function updateCount() {
+  const text = essay.value.trim();
+  const words = text ? text.split(/\s+/).length : 0;
+  document.getElementById("count").textContent = words;
+  document.getElementById("progress").textContent =
+    words + " / 250 words" +
+    (words > 250 ? " — above target" : "");
+}
+
+essay.addEventListener("input", updateCount);
+
+let seconds = 1800;
+let interval = null;
+
+function displayTime() {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  document.getElementById("timer").textContent =
+    String(m).padStart(2, "0") + ":" +
+    String(s).padStart(2, "0");
+}
+
+function startTimer() {
+  if (interval !== null) return;
+  document.getElementById("status").textContent = "Timer running.";
+  interval = setInterval(() => {
+    if (seconds > 0) {
+      seconds--;
+      displayTime();
+    } else {
+      pauseTimer();
+      document.getElementById("status").textContent =
+        "Time is up. Review your essay.";
+      alert("Time is up! Review your essay.");
+    }
+  }, 1000);
+}
+
+function pauseTimer() {
+  clearInterval(interval);
+  interval = null;
+  if (seconds > 0) {
+    document.getElementById("status").textContent = "Timer paused.";
+  }
+}
+
+function saveEssay() {
+  localStorage.setItem("practiceEssay", essay.value);
+  localStorage.setItem("practiceTopic",
+    document.getElementById("topic").textContent);
+  document.getElementById("message").textContent =
+    "Essay saved in this browser.";
+}
+
+function loadEssay() {
+  essay.value = localStorage.getItem("practiceEssay") || "";
+  document.getElementById("topic").textContent =
+    localStorage.getItem("practiceTopic") ||
+    "No saved topic found.";
+  updateCount();
+  document.getElementById("message").textContent =
+    "Saved essay loaded.";
+}
+
+function downloadEssay() {
+  const content =
+    document.getElementById("topic").textContent +
+    "\n\n" + essay.value;
+  const blob = new Blob([content], {type: "text/plain;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "my-essay.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearEssay() {
+  if (!confirm("Clear the current essay? Download or save it first.")) return;
+  essay.value = "";
+  updateCount();
+  document.getElementById("message").textContent =
+    "Writing area cleared. Previously saved copy remains available.";
+}
+
+newTopic();
+updateCount();
+displayTime();
+</script>
+</body>
+</html>
